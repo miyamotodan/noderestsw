@@ -13,9 +13,10 @@ const app = express();
 // CORS
 app.use(cors());
 
-// parse incoming requests
-//app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }))
+// parse incoming requests application/json
+app.use(bodyParser.json());
+// parse incoming requests application/x-www-form-urlencoded
+//app.use(bodyParser.urlencoded({ extended: true }))
 
 // diskdb connection
 global.db = require('diskdb');

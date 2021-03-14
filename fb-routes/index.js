@@ -93,7 +93,7 @@ router.get("/docs", swaggerUi.setup(specs, { explorer: true }));
  *      requestBody:
  *        required: true
  *        content:
- *          application/x-www-form-urlencoded:
+ *          application/json:
  *            schema:
  *              $ref: '#/components/schemas/User'
  *      responses:
@@ -111,19 +111,25 @@ router.post("/users", (req, res, next) => {
 
   // controlli di validità di dati immessi
   if (isEmpty(u.id)) {
-    const m = new Message('error', 'id non impostato correttamente', u.timestamp);
-    // ritorna il messaggio
-    res.json(m);
+    
+    var err = new Error("id non impostato correttamente");
+    err.status = 500;
+    next(err);
+  
   } else
     if (!emailValidator.validate(u.email)) {
-      const m = new Message('error', 'email non valida', u.timestamp);
-      // ritorna il messaggio
-      res.json(m);
+
+      var err = new Error("email non valida");
+      err.status = 500;
+      next(err);
+      
     } else
       if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
-        const m = new Message('error', 'età non valida', u.timestamp);
-        // ritorna il messaggio
-        res.json(m);
+        
+        var err = new Error("età non valida");
+        err.status = 500;
+        next(err);
+      
       } else {
         console.log('Adding new user: ', u);
         // add new item to db
@@ -156,8 +162,6 @@ router.get("/users", (req, res, next) => {
   res.json(global.db.users.find());
 });
 
-
-
 /**
  * @swagger
  * path:
@@ -188,7 +192,10 @@ router.get("/users/:id", (req, res) => {
     console.log('Returning user: ' + itemId);
     res.json(item);
   } else {
-    res.json(new Message('error', 'User id non trovato', Date.now()))
+    
+    var err = new Error("user id non trovato");
+    err.status = 500;
+    next(err);
   }
 
 });
@@ -210,7 +217,7 @@ router.get("/users/:id", (req, res) => {
  *      requestBody:
  *        required: true
  *        content:
- *          application/x-www-form-urlencoded:
+ *          application/json:
  *            schema:
  *              $ref: '#/components/schemas/User'
  *      responses:
@@ -232,21 +239,27 @@ router.get("/users/:id", (req, res) => {
     u.timestamp = Date.now();
 
     // controlli di validità di dati immessi
-    if (isEmpty(u.id)) {
-      const m = new Message('error', 'id non impostato correttamente', u.timestamp);
-      // ritorna il messaggio
-      res.json(m);
+  if (isEmpty(u.id)) {
+    
+    var err = new Error("id non impostato correttamente");
+    err.status = 500;
+    next(err);
+  
+  } else
+    if (!emailValidator.validate(u.email)) {
+
+      var err = new Error("email non valida");
+      err.status = 500;
+      next(err);
+      
     } else
-      if (!emailValidator.validate(u.email)) {
-        const m = new Message('error', 'email non valida', u.timestamp);
-        // ritorna il messaggio
-        res.json(m);
-      } else
-        if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
-          const m = new Message('error', 'età non valida', u.timestamp);
-          // ritorna il messaggio
-          res.json(m);
-        } else {
+      if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
+        
+        var err = new Error("età non valida");
+        err.status = 500;
+        next(err);
+      
+      } else {
           console.log('Updating user: ', u);
           // update an item to db
           global.db.users.remove({ id: u.id }, true);
@@ -257,7 +270,11 @@ router.get("/users/:id", (req, res) => {
         }
 
   } else {
-    res.json(new Message('error', 'User id non trovato', Date.now()))
+
+    var err = new Error("user id non trovato");
+    err.status = 500;
+    next(err);
+
   }
 
 });
@@ -338,7 +355,11 @@ router.delete("/users", (req, res, next) => {
       // return updated list
       res.json(m);
     } else {
-      res.json(new Message('error', 'User id non trovato', Date.now()))
+
+      var err = new Error("user id non trovato");
+      err.status = 500;
+      next(err);
+      
     }
 
 });
@@ -359,23 +380,5 @@ router.use(function (err, req, res, next) {
     }
   });
 });
-
-// catch 404 and forward to error handler
-router.use(function (req, res, next) {
-  var err = new Error("Not Found");
-  err.status = 404;
-  next(err);
-});
-
-// Error Handler
-router.use(function (err, req, res, next) {
-  res.status(err.status || 500);
-  res.json({
-    error: {
-      message: err.message
-    }
-  });
-});
-
 
 module.exports = router;
