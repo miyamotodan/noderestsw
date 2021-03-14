@@ -193,6 +193,74 @@ router.get("/users/:id", (req, res) => {
 
 });
 
+/**
+ * @swagger
+ * path:
+ *  /users/{id}:
+ *    put:
+ *      summary: modifica l'utente con l'id specificato
+ *      tags: [user]
+ *      parameters:
+ *      - in: path
+ *        name: id
+ *        schema:
+ *          type: string
+ *        required: true
+ *        description: identificativo dell'utente da modificare
+ *      requestBody:
+ *        required: true
+ *        content:
+ *          application/x-www-form-urlencoded:
+ *            schema:
+ *              $ref: '#/components/schemas/User'
+ *      responses:
+ *        "200":
+ *          description: messaggio 
+ *          content:
+ *            application/json:
+ *              schema:
+ *                $ref: '#/components/schemas/Message'
+ */
+ router.put("/users/:id", (req, res) => {
+  const itemId = req.params.id;
+  const item = global.db.users.find({ id: itemId });
+
+  if (!isEmptyObj(item)) {
+    
+    console.log("recieved:", req.body);
+    const u = new User(req.body.id, req.body.email, req.body.name, req.body.surname, req.body.nick, req.body.age);
+    u.timestamp = Date.now();
+
+    // controlli di validità di dati immessi
+    if (isEmpty(u.id)) {
+      const m = new Message('error', 'id non impostato correttamente', u.timestamp);
+      // ritorna il messaggio
+      res.json(m);
+    } else
+      if (!emailValidator.validate(u.email)) {
+        const m = new Message('error', 'email non valida', u.timestamp);
+        // ritorna il messaggio
+        res.json(m);
+      } else
+        if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
+          const m = new Message('error', 'età non valida', u.timestamp);
+          // ritorna il messaggio
+          res.json(m);
+        } else {
+          console.log('Updating user: ', u);
+          // update an item to db
+          global.db.users.remove({ id: u.id }, true);
+          db.users.save(u);
+          const m = new Message('message', 'utente modificato', u.timestamp);
+          // ritorna il messaggio
+          res.json(m);
+        }
+
+  } else {
+    res.json(new Message('error', 'User id non trovato', Date.now()))
+  }
+
+});
 
 /**
  * @swagger
@@ -229,6 +297,52 @@ router.delete("/users", (req, res, next) => {
   res.json(m);
 });
 
+/**
+ * @swagger
+ * path:
+ *  /users/{id}:
+ *    delete:
+ *      summary: elimina tutti gli utenti
+ *      tags: [user]
+ *      parameters:
+ *      - in: path
+ *        name: id
+ *        schema:
+ *          type: string
+ *        required: true
+ *        description: identificativo dell'utente da eliminare
+ *      responses:
+ *        "200":
+ *          description: messaggio
+ *          content:
+ *            application/json:
+ *              schema:
+ *                $ref: '#/components/schemas/Message'
+ */
+ router.delete("/users/:id", (req, res, next) => {
+
+  const timestamp = Date.now();
+  const itemId = req.params.id;
+  const item = global.db.users.find({ id: itemId });
+
+  if (!isEmptyObj(item)) {
+
+      console.log('Deleting user: ' + itemId);
+
+      //preparo il messaggio
+      const m = new Message('message', 'users deleted :' + itemId, timestamp);
+
+      //elimino l'elemento
+      global.db.users.remove({ id: itemId }, true);
+      
+      // return updated list
+      res.json(m);
+    } else {
+      res.json(new Message('error', 'User id non trovato', Date.now()))
+    }
+
+});
+
 // catch 404 and forward to error handler
 router.use(function (req, res, next) {
   var err = new Error("Not Found");
@@ -245,5 +359,23 @@ router.use(function (err, req, res, next) {
     }
   });
 });
+
+// catch 404 and forward to error handler
+router.use(function (req, res, next) {
+  var err = new Error("Not Found");
+  err.status = 404;
+  next(err);
+});
+
+// Error Handler
+router.use(function (err, req, res, next) {
+  res.status(err.status || 500);
+  res.json({
+    error: {
+      message: err.message
+    }
+  });
+});
+
 
 module.exports = router;
