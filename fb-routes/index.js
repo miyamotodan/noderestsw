@@ -111,25 +111,25 @@ router.post("/users", (req, res, next) => {
 
   // controlli di validità di dati immessi
   if (isEmpty(u.id)) {
-    
+
     var err = new Error("id non impostato correttamente");
     err.status = 500;
     next(err);
-  
+
   } else
     if (!emailValidator.validate(u.email)) {
 
       var err = new Error("email non valida");
       err.status = 500;
       next(err);
-      
+
     } else
       if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
-        
+
         var err = new Error("età non valida");
         err.status = 500;
         next(err);
-      
+
       } else {
         console.log('Adding new user: ', u);
         // add new item to db
@@ -184,7 +184,7 @@ router.get("/users", (req, res, next) => {
  *              schema:
  *                $ref: '#/components/schemas/User'
  */
-router.get("/users/:id", (req, res) => {
+router.get("/users/:id", (req, res, next) => {
   const itemId = req.params.id;
   const item = global.db.users.find({ id: itemId });
 
@@ -192,7 +192,7 @@ router.get("/users/:id", (req, res) => {
     console.log('Returning user: ' + itemId);
     res.json(item);
   } else {
-    
+
     var err = new Error("user id non trovato");
     err.status = 500;
     next(err);
@@ -228,38 +228,40 @@ router.get("/users/:id", (req, res) => {
  *              schema:
  *                $ref: '#/components/schemas/Message'
  */
- router.put("/users/:id", (req, res) => {
+router.put("/users/:id", (req, res, next) => {
   const itemId = req.params.id;
   const item = global.db.users.find({ id: itemId });
 
+  console.log("item:", item);
+
   if (!isEmptyObj(item)) {
-    
+
     console.log("recieved:", req.body);
     const u = new User(req.body.id, req.body.email, req.body.name, req.body.surname, req.body.nick, req.body.age);
     u.timestamp = Date.now();
 
     // controlli di validità di dati immessi
-  if (isEmpty(u.id)) {
-    
-    var err = new Error("id non impostato correttamente");
-    err.status = 500;
-    next(err);
-  
-  } else
-    if (!emailValidator.validate(u.email)) {
+    if (isEmpty(u.id)) {
 
-      var err = new Error("email non valida");
+      var err = new Error("id non impostato correttamente");
       err.status = 500;
       next(err);
-      
+
     } else
-      if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
-        
-        var err = new Error("età non valida");
+      if (!emailValidator.validate(u.email)) {
+
+        var err = new Error("email non valida");
         err.status = 500;
         next(err);
-      
-      } else {
+
+      } else
+        if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
+
+          var err = new Error("età non valida");
+          err.status = 500;
+          next(err);
+
+        } else {
           console.log('Updating user: ', u);
           // update an item to db
           global.db.users.remove({ id: u.id }, true);
@@ -336,7 +338,7 @@ router.delete("/users", (req, res, next) => {
  *              schema:
  *                $ref: '#/components/schemas/Message'
  */
- router.delete("/users/:id", (req, res, next) => {
+router.delete("/users/:id", (req, res, next) => {
 
   const timestamp = Date.now();
   const itemId = req.params.id;
@@ -344,23 +346,23 @@ router.delete("/users", (req, res, next) => {
 
   if (!isEmptyObj(item)) {
 
-      console.log('Deleting user: ' + itemId);
+    console.log('Deleting user: ' + itemId);
 
-      //preparo il messaggio
-      const m = new Message('message', 'users deleted :' + itemId, timestamp);
+    //preparo il messaggio
+    const m = new Message('message', 'users deleted :' + itemId, timestamp);
 
-      //elimino l'elemento
-      global.db.users.remove({ id: itemId }, true);
-      
-      // return updated list
-      res.json(m);
-    } else {
+    //elimino l'elemento
+    global.db.users.remove({ id: itemId }, true);
 
-      var err = new Error("user id non trovato");
-      err.status = 500;
-      next(err);
-      
-    }
+    // return updated list
+    res.json(m);
+  } else {
+
+    var err = new Error("user id non trovato");
+    err.status = 500;
+    next(err);
+
+  }
 
 });
 
