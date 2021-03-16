@@ -84,6 +84,35 @@ router.use("/docs", swaggerUi.serve);
 router.get("/docs", swaggerUi.setup(specs, { explorer: true }));
 
 /**
+ * controlla la validità di un utente
+ * @param {*} u 
+ */
+function isValid(u) {
+
+  if (isEmpty(u.id)) {
+
+    var err = new Error("id non impostato correttamente");
+    err.status = 500;
+    return err;
+
+  } else
+    if (!emailValidator.validate(u.email)) {
+
+      var err = new Error("email non valida");
+      err.status = 500;
+      return err;
+
+    } else
+      if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
+
+        var err = new Error("età non valida");
+        err.status = 500;
+        return err;
+
+      } else return {};
+}
+
+/**
  * @swagger
  * path:
  *  /users/:
@@ -109,35 +138,16 @@ router.post("/users", (req, res, next) => {
   const u = new User(req.body.id, req.body.email, req.body.name, req.body.surname, req.body.nick, req.body.age);
   u.timestamp = Date.now();
 
-  // controlli di validità di dati immessi
-  if (isEmpty(u.id)) {
+  let err = isValid(u);
+  if (isEmptyObj(err)) {
+    console.log('Adding new user: ', u);
+    // add new item to db
+    db.users.save(u);
+    const m = new Message('message', 'utente salvato', u.timestamp);
+    // ritorna il messaggio
+    res.json(m);
+  } else next(err)
 
-    var err = new Error("id non impostato correttamente");
-    err.status = 500;
-    next(err);
-
-  } else
-    if (!emailValidator.validate(u.email)) {
-
-      var err = new Error("email non valida");
-      err.status = 500;
-      next(err);
-
-    } else
-      if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
-
-        var err = new Error("età non valida");
-        err.status = 500;
-        next(err);
-
-      } else {
-        console.log('Adding new user: ', u);
-        // add new item to db
-        db.users.save(u);
-        const m = new Message('message', 'utente salvato', u.timestamp);
-        // ritorna il messaggio
-        res.json(m);
-      }
 });
 
 /**
@@ -241,35 +251,16 @@ router.put("/users/:id", (req, res, next) => {
     u.timestamp = Date.now();
 
     // controlli di validità di dati immessi
-    if (isEmpty(u.id)) {
-
-      var err = new Error("id non impostato correttamente");
-      err.status = 500;
-      next(err);
-
-    } else
-      if (!emailValidator.validate(u.email)) {
-
-        var err = new Error("email non valida");
-        err.status = 500;
-        next(err);
-
-      } else
-        if (!isInteger(u.age) || Number(u.age) < 1 || Number(u.age) > 120) {
-
-          var err = new Error("età non valida");
-          err.status = 500;
-          next(err);
-
-        } else {
-          console.log('Updating user: ', u);
-          // update an item to db
-          global.db.users.remove({ id: u.id }, true);
-          db.users.save(u);
-          const m = new Message('message', 'utente modificato', u.timestamp);
-          // ritorna il messaggio
-          res.json(m);
-        }
+    let err = isValid(u);
+    if (isEmptyObj(err)) {
+      console.log('Updating user: ', u);
+      // update an item to db
+      global.db.users.remove({ id: u.id }, true);
+      db.users.save(u);
+      const m = new Message('message', 'utente modificato', u.timestamp);
+      // ritorna il messaggio
+      res.json(m);
+    } else next(err)
 
   } else {
 
